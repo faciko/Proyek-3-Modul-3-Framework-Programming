@@ -2,7 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreActivityRequest;
+use App\Http\Requests\UpdateActivityRequest;
 use App\Models\Activity;
+use App\Services\ActivityService;
+use DomainException;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 class ActivityController extends Controller
@@ -19,5 +24,58 @@ class ActivityController extends Controller
     public function show(Activity $activity): View
     {
         return view('activities.show', compact('activity'));
+    }
+
+    public function create(): View
+    {
+        return view('activities.create');
+    }
+
+    public function store(StoreActivityRequest $request): RedirectResponse
+    {
+        $activity = $service->create(
+            $request->validated()
+        );
+
+        return redirect()
+            ->route('activities.show', $activity)
+            ->with('success', 'Kegiatan berhasil ditambahkan.');
+    }
+
+    public function edit(Activity $activity): View
+    {
+        return view('activities.edit', compact('activity'));
+    }
+
+    public function update(
+        UpdateActivityRequest $request,
+        Activity $activity,
+        ActivityService $service
+    ): RedirectResponse {
+        try {
+            $activity = $service->update(
+                $activity,
+                $request->validated()
+            );
+        } catch (DomainException $exception) {
+            return back()
+                ->withErrors([
+                    'status' => $exception->getMessage(),
+                ])
+                ->withInput();
+        }
+
+        return redirect()
+            ->route('activities.show', $activity)
+            ->with('success', 'Kegiatan berhasil diperbarui.');
+    }
+
+    public function destroy(Activity $activity): RedirectResponse
+    {
+        $activity->delete();
+
+        return redirect()
+            ->route('activities.index')
+            ->with('success', 'Kegiatan berhasil dihapus.');
     }
 }

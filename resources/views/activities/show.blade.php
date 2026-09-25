@@ -21,4 +21,14 @@
     <a href="{{ route('activities.index') }}">
         Kembali ke Daftar Kegiatan
     </a>
+
+    <form
+        action="{{ route('activities.destroy', $activity) }}"
+        method="POST"
+    >
+        @csrf
+        @method('DELETE')
+
+        <button type="submit">Hapus</button>
+    </form>
 @endsection
