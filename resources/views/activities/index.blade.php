@@ -1,6 +1,31 @@
 @extends('layouts.app')
 
 @section('content')
+    <form action="{{ route('activities.index') }}" method="GET">
+        <label for="status">Filter Status</label>
+
+        <select id="status" name="status">
+            <option value="">Semua</option>
+
+            <option value="Planned"
+                @selected($status === 'Planned')>
+                Planned
+            </option>
+
+            <option value="Ongoing"
+                @selected($status === 'Ongoing')>
+                Ongoing
+            </option>
+
+            <option value="Done"
+                @selected($status === 'Done')>
+                Done
+            </option>
+        </select>
+
+        <button type="submit">Filter</button>
+    </form>
+    
     <h2>Daftar Kegiatan</h2>
 
     @forelse ($activities as $activity)
