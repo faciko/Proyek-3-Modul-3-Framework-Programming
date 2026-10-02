@@ -9,6 +9,7 @@ class ActivityService
 {
     public function create(array $data): Activity
     {
+        $data['status'] = $data['status'] ?? 'draft';
         return Activity::create($data);
     }
 

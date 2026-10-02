@@ -46,11 +46,15 @@ class ActivityController extends Controller
 
     public function create(): View
     {
-        return view('activities.create');
+        $categories = \App\Models\Category::orderBy('name')->get();
+
+        return view('activities.create', compact('categories'));
     }
 
-    public function store(StoreActivityRequest $request): RedirectResponse
-    {
+    public function store(
+        StoreActivityRequest $request,
+        ActivityService $service
+    ): RedirectResponse {
         $activity = $service->create(
             $request->validated()
         );
@@ -62,7 +66,9 @@ class ActivityController extends Controller
 
     public function edit(Activity $activity): View
     {
-        return view('activities.edit', compact('activity'));
+        $categories = \App\Models\Category::orderBy('name')->get();
+
+        return view('activities.edit', compact('activity', 'categories'));
     }
 
     public function update(
