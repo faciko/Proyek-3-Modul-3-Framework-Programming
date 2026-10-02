@@ -5,38 +5,34 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreActivityRequest;
 use App\Http\Requests\UpdateActivityRequest;
 use App\Models\Activity;
+use App\Models\Category;
 use App\Services\ActivityService;
 use DomainException;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\View\View;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class ActivityController extends Controller
 {
     public function index(Request $request): View
     {
-       $validStatuses = [
-            'Planned',
-            'Ongoing',
-            'Done',
-        ];
+        $filters = $request->only(['search', 'category_id', 'status', 'sort']);
+        $filters['status'] = in_array($filters['status'] ?? null, ['draft', 'published', 'completed'], true)
+            ? $filters['status']
+            : null;
+        $filters['sort'] = in_array($filters['sort'] ?? null, ['latest', 'oldest'], true)
+            ? $filters['sort']
+            : 'latest';
 
-        $status = $request->query('status');
+        $activities = Activity::query()
+            ->with('category')
+            ->filter($filters)
+            ->paginate(10)
+            ->withQueryString();
 
-        $query = Activity::query();
+        $categories = Category::orderBy('name')->get();
 
-        if (in_array($status, $validStatuses, true)) {
-            $query->where('status', $status);
-        }
-
-        $activities = $query
-            ->orderBy('activity_date')
-            ->get();
-
-        return view(
-            'activities.index',
-            compact('activities', 'status')
-        );
+        return view('activities.index', compact('activities', 'categories', 'filters'));
     }
 
     public function show(Activity $activity): View
@@ -46,7 +42,7 @@ class ActivityController extends Controller
 
     public function create(): View
     {
-        $categories = \App\Models\Category::orderBy('name')->get();
+        $categories = Category::orderBy('name')->get();
 
         return view('activities.create', compact('categories'));
     }
@@ -56,7 +52,8 @@ class ActivityController extends Controller
         ActivityService $service
     ): RedirectResponse {
         $activity = $service->create(
-            $request->validated()
+            $request->safe()->except('poster'),
+            $request->file('poster')
         );
 
         return redirect()
@@ -66,7 +63,7 @@ class ActivityController extends Controller
 
     public function edit(Activity $activity): View
     {
-        $categories = \App\Models\Category::orderBy('name')->get();
+        $categories = Category::orderBy('name')->get();
 
         return view('activities.edit', compact('activity', 'categories'));
     }
@@ -76,18 +73,11 @@ class ActivityController extends Controller
         Activity $activity,
         ActivityService $service
     ): RedirectResponse {
-        try {
-            $activity = $service->update(
-                $activity,
-                $request->validated()
-            );
-        } catch (DomainException $exception) {
-            return back()
-                ->withErrors([
-                    'status' => $exception->getMessage(),
-                ])
-                ->withInput();
-        }
+        $activity = $service->update(
+            $activity,
+            $request->safe()->except('poster'),
+            $request->file('poster')
+        );
 
         return redirect()
             ->route('activities.show', $activity)
@@ -101,5 +91,44 @@ class ActivityController extends Controller
         return redirect()
             ->route('activities.index')
             ->with('success', 'Kegiatan berhasil dihapus.');
+    }
+
+    public function trash(): View
+    {
+        $activities = Activity::onlyTrashed()
+            ->with('category')
+            ->orderByDesc('deleted_at')
+            ->paginate(10);
+
+        return view('activities.trash', compact('activities'));
+    }
+
+    public function restore(int $activity): RedirectResponse
+    {
+        $activity = Activity::onlyTrashed()->findOrFail($activity);
+        $activity->restore();
+
+        return redirect()->route('activities.trash')->with('success', 'Kegiatan berhasil dipulihkan.');
+    }
+
+    public function publish(Activity $activity, ActivityService $service): RedirectResponse
+    {
+        return $this->transition($activity, $service, 'publish');
+    }
+
+    public function complete(Activity $activity, ActivityService $service): RedirectResponse
+    {
+        return $this->transition($activity, $service, 'complete');
+    }
+
+    private function transition(Activity $activity, ActivityService $service, string $action): RedirectResponse
+    {
+        try {
+            $service->{$action}($activity);
+        } catch (DomainException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+
+        return back()->with('success', 'Status kegiatan berhasil diperbarui.');
     }
 }

@@ -3,7 +3,7 @@
 @section('content')
     <h2>Tambah Kegiatan</h2>
 
-    <form action="{{ route('activities.store') }}" method="POST">
+    <form action="{{ route('activities.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
 
         @include('activities._form')

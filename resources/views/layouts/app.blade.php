@@ -14,6 +14,7 @@
             <a href="{{ route('activities.index') }}">Daftar Kegiatan</a>
             <a href="{{ route('activities.create') }}">Tambah Kegiatan</a>
             <a href="{{ route('categories.index') }}">Kelola Kategori</a>
+            <a href="{{ route('activities.trash') }}">Trash</a>
         </nav>
         <hr>
     </header>

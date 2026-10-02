@@ -1,45 +1,54 @@
 @extends('layouts.app')
 
 @section('content')
+    <h2>Daftar Kegiatan</h2>
+
+    @if (session('success'))
+        <p style="color: green;">{{ session('success') }}</p>
+    @endif
+
     <form action="{{ route('activities.index') }}" method="GET">
-        <label for="status">Filter Status</label>
+        <label for="search">Cari kode atau judul</label>
+        <input id="search" name="search" value="{{ $filters['search'] ?? '' }}">
 
-        <select id="status" name="status">
+        <label for="category_id">Kategori</label>
+        <select id="category_id" name="category_id">
             <option value="">Semua</option>
-
-            <option value="Planned"
-                @selected($status === 'Planned')>
-                Planned
-            </option>
-
-            <option value="Ongoing"
-                @selected($status === 'Ongoing')>
-                Ongoing
-            </option>
-
-            <option value="Done"
-                @selected($status === 'Done')>
-                Done
-            </option>
+            @foreach ($categories as $category)
+                <option value="{{ $category->id }}" @selected(($filters['category_id'] ?? null) == $category->id)>
+                    {{ $category->name }}
+                </option>
+            @endforeach
         </select>
 
-        <button type="submit">Filter</button>
+        <label for="status">Status</label>
+        <select id="status" name="status">
+            <option value="">Semua</option>
+            @foreach (['draft', 'published', 'completed'] as $status)
+                <option value="{{ $status }}" @selected(($filters['status'] ?? null) === $status)>{{ $status }}</option>
+            @endforeach
+        </select>
+
+        <label for="sort">Urutan</label>
+        <select id="sort" name="sort">
+            <option value="latest" @selected(($filters['sort'] ?? 'latest') === 'latest')>Terbaru</option>
+            <option value="oldest" @selected(($filters['sort'] ?? null) === 'oldest')>Terlama</option>
+        </select>
+        <button type="submit">Terapkan</button>
+        <a href="{{ route('activities.index') }}">Reset</a>
     </form>
-    
-    <h2>Daftar Kegiatan</h2>
+
+    <p><a href="{{ route('activities.create') }}">Tambah kegiatan</a> | <a href="{{ route('activities.trash') }}">Lihat Trash</a></p>
 
     @forelse ($activities as $activity)
         <article>
-            <h3>
-                <a href="{{ route('activities.show', $activity) }}">
-                    {{ $activity->title }}
-                </a>
-            </h3>
-
-            <p>Tanggal: {{ $activity->activity_date->format('d M Y') }}</p>
-            <p>Status: {{ $activity->status }}</p>
+            <h3><a href="{{ route('activities.show', $activity) }}">[{{ $activity->code }}] {{ $activity->title }}</a></h3>
+            <p>Kategori: {{ $activity->category->name }} | Status: {{ $activity->status }}</p>
+            <p>Mulai: {{ $activity->start_at->format('d M Y H:i') }} | Kapasitas: {{ $activity->registered_count }}/{{ $activity->capacity }}</p>
         </article>
     @empty
-        <p>Belum ada kegiatan.</p>
+        <p>Tidak ada kegiatan yang sesuai.</p>
     @endforelse
+
+    {{ $activities->links() }}
 @endsection

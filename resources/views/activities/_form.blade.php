@@ -16,6 +16,16 @@
 <br>
 
 <div>
+    <label for="poster">Poster (JPG, PNG, atau WEBP, maksimal 2 MB)</label><br>
+    <input id="poster" name="poster" type="file" accept="image/jpeg,image/png,image/webp">
+    @error('poster')
+        <p style="color:red;">{{ $message }}</p>
+    @enderror
+</div>
+
+<br>
+
+<div>
     <label for="code">Kode Kegiatan *</label><br>
     <input
         id="code"
